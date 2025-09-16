@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const newQuoteButton = document.getElementById('newQuote');
   const exportQuotesButton = document.getElementById('exportQuotes');
   const importFileInput = document.getElementById('importFile');
+  const categoryFilter = document.getElementById('categoryFilter');
 
   const initialQuotes = [
     { text: "The only way to do great work is to love what you do.", category: "Inspiration" },
@@ -21,7 +22,39 @@ document.addEventListener('DOMContentLoaded', () => {
       quoteDisplay.innerHTML = `<p>"${quote.text}" - <em>${quote.category}</em></p>`;
       sessionStorage.setItem('lastViewedQuote', JSON.stringify(quote));
     } else {
-      quoteDisplay.innerHTML = `<p>No quotes available. Add one below!</p>`;
+      quoteDisplay.innerHTML = `<p>No quotes available for this category.</p>`;
+    }
+  }
+
+  function populateCategories() {
+    const categories = ['all', ...new Set(quotes.map(quote => quote.category))];
+    categoryFilter.innerHTML = ''; // Clear existing options
+    categories.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+      categoryFilter.appendChild(option);
+    });
+    const lastSelectedCategory = localStorage.getItem('lastFilterCategory') || 'all';
+    categoryFilter.value = lastSelectedCategory;
+  }
+
+  function filterQuotes() {
+    const selectedCategory = categoryFilter.value;
+    localStorage.setItem('lastFilterCategory', selectedCategory);
+
+    if (selectedCategory === 'all') {
+      showRandomQuote();
+      return;
+    }
+
+    const filteredQuotes = quotes.filter(quote => quote.category === selectedCategory);
+    if (filteredQuotes.length > 0) {
+      const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
+      const randomQuote = filteredQuotes[randomIndex];
+      showQuote(randomQuote);
+    } else {
+      showQuote(null);
     }
   }
 
@@ -42,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (newQuoteText && newQuoteCategory) {
       quotes.push({ text: newQuoteText, category: newQuoteCategory });
       saveQuotes();
+      populateCategories(); // Update categories dropdown
       document.getElementById('newQuoteText').value = '';
       document.getElementById('newQuoteCategory').value = '';
       alert('New quote added successfully!');
@@ -65,6 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function exportToJsonFile() {
+    if (quotes.length === 0) {
+      alert('There are no quotes to export.');
+      return;
+    }
     const jsonString = JSON.stringify(quotes, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -83,8 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Array.isArray(importedQuotes)) {
           quotes.push(...importedQuotes);
           saveQuotes();
+          populateCategories(); // Update categories dropdown
           alert('Quotes imported successfully!');
-          showRandomQuote(); // Refresh display
+          filterQuotes(); // Refresh display based on current filter
         } else {
           alert('Invalid JSON format. Please import an array of quotes.');
         }
@@ -99,18 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- Initial Setup ---
-  newQuoteButton.addEventListener('click', showRandomQuote);
+  newQuoteButton.addEventListener('click', filterQuotes); // Changed to respect filter
   exportQuotesButton.addEventListener('click', exportToJsonFile);
   importFileInput.addEventListener('change', importFromJsonFile);
+  categoryFilter.addEventListener('change', filterQuotes);
 
   createAddQuoteForm();
-
-  const lastViewedQuote = JSON.parse(sessionStorage.getItem('lastViewedQuote'));
-  if (lastViewedQuote) {
-    showQuote(lastViewedQuote);
-  } else {
-    showRandomQuote();
-  }
+  populateCategories();
+  filterQuotes(); // Show a quote on initial load based on the saved filter
 
   if (!localStorage.getItem('quotes')) {
     saveQuotes();
