@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function syncQuotes() {
+  function fetchQuotesFromServer() {
     const localQuotesString = JSON.stringify(quotes);
     const serverQuotesString = localStorage.getItem('serverQuotes');
 
@@ -177,5 +177,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Periodically sync with the server
-  setInterval(syncQuotes, 5000);
+  setInterval(fetchQuotesFromServer, 5000);
 });
